@@ -1,5 +1,7 @@
 # Parser for Pubmed Open-Access XML Subset and MEDLINE XML Dataset
 
+THIS VERSION IS FORKED FROM https://github.com/titipata/pubmed_parser to add a few more bibliographic fields to `parse_medline_xml`
+
 [![Join the chat at https://gitter.im/titipata/pubmed_parser](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/titipata/pubmed_parser?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/titipata/pubmed_parser/blob/master/LICENSE) [![DOI](https://zenodo.org/badge/31697087.svg)](https://zenodo.org/badge/latestdoi/31697087)
 
@@ -147,6 +149,8 @@ correspond to each authors
 - `nlm_unique_id`: NLM unique identification
 - `issn_linking`: ISSN linkage, typically use to link with Web of Science dataset
 - `country`: Country extracted from journal information field
+- `volume`, `issue`, and `pagination`: Traditional bibliographic information
+- `status`: as reported by PubMed. Values include `aheadofprint` for "Epub ahead of print", and `ppublished` for "Published in print"
 - `delete`: boolean if `False` means paper got updated so you might have two
 XMLs for the same paper. You can delete the record of deleted paper
 because it got updated.

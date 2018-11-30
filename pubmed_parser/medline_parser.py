@@ -110,6 +110,62 @@ def parse_other_id(medline):
             'other_id': other_id}
 
 
+def parse_biblio_info(pubmed):
+    """Parse MEDLINE bibliographical information (Volume, Issue, etc.)
+
+    Parameters
+    ----------
+     medline: Element
+        The lxml node pointing to a medline document
+
+    Returns
+    -------
+    dict_out: dict
+        dictionary with keys including `volume`, `issue`,
+        `pagination`
+   """
+    medline = pubmed.find('MedlineCitation')
+    article = medline.find('Article')
+    journal = article.find('Journal')
+    journal_issue = journal.find('JournalIssue')
+    if journal_issue is not None:
+        if journal_issue.find('Volume') is not None:
+            volume = journal_issue.find('Volume').text or ''
+        else:
+            volume = ''
+        if journal_issue.find('Issue') is not None:
+            issue = journal_issue.find('Issue').text or ''
+        else:
+            issue = ''
+    else:
+        volume = ''
+        issue = ''
+
+    pagination_node = article.find('Pagination')
+    if pagination_node is not None:
+        if pagination_node.find('MedlinePgn') is not None:
+            pagination = pagination_node.find('MedlinePgn').text or ''
+        else:
+            pagination = ''
+    else:
+        pagination = ''
+
+    pubmed_data = pubmed.find('PubmedData')
+    if pubmed_data is not None:
+        publication_status = pubmed_data.find('PublicationStatus')
+        if publication_status is not None:
+            status = publication_status.text or ''
+        else:
+            status = ''
+    else:
+        status = ''
+
+    return {'volume': volume,
+            'issue': issue,
+            'pagination': pagination,
+            'status': status}
+
+
 def parse_journal_info(medline):
     """Parse MEDLINE journal information
 
@@ -256,13 +312,13 @@ def date_extractor(journal, year_info_only):
         return "-".join(str(x) for x in filter(None, [year, month, day]))
 
 
-def parse_article_info(medline, year_info_only, nlm_category):
+def parse_article_info(pubmed, year_info_only, nlm_category):
     """Parse article nodes from Medline dataset
 
     Parameters
     ----------
-    medline: Element
-        The lxml node pointing to a medline document
+    pubmed: Element
+        The lxml node pointing to a PubmedArticle document
     year_info_only: bool
         see: date_extractor()
     nlm_category: bool
@@ -277,8 +333,9 @@ def parse_article_info(medline, year_info_only, nlm_category):
         `delete` is always `False` because this function parses
         articles that by definition are not deleted.
     """
-    article = medline.find('Article')
 
+    medline = pubmed.find('MedlineCitation')
+    article = medline.find('Article')
     if article.find('ArticleTitle') is not None:
         title = stringify_children(article.find('ArticleTitle')).strip() or ''
     else:
@@ -338,6 +395,7 @@ def parse_article_info(medline, year_info_only, nlm_category):
     keywords = parse_keywords(medline)
     other_id_dict = parse_other_id(medline)
     journal_info_dict = parse_journal_info(medline)
+    biblio_info_dict = parse_biblio_info(pubmed)
 
     dict_out = {'title': title,
                 'abstract': abstract,
@@ -351,6 +409,7 @@ def parse_article_info(medline, year_info_only, nlm_category):
                 'delete': False}
     dict_out.update(other_id_dict)
     dict_out.update(journal_info_dict)
+    dict_out.update(biblio_info_dict)
     return dict_out
 
 
@@ -384,9 +443,7 @@ def parse_medline_xml(path, year_info_only=True, nlm_category=False):
         added with no information other than the field `delete` being `True`
     """
     tree = read_xml(path)
-    medline_citations = tree.findall('//MedlineCitationSet/MedlineCitation')
-    if len(medline_citations) == 0:
-        medline_citations = tree.findall('//MedlineCitation')
+    medline_citations = tree.findall('//PubmedArticle')
     article_list = list(map(lambda m: parse_article_info(m, year_info_only, nlm_category), medline_citations))
     delete_citations = tree.findall('//DeleteCitation/PMID')
     dict_delete = \
